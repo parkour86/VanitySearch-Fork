@@ -1654,6 +1654,14 @@ void VanitySearch::Search(int nbThread,std::vector<int> gpuId,std::vector<int> g
   TH_PARAM *params = (TH_PARAM *)malloc((nbCPUThread + nbGPUThread) * sizeof(TH_PARAM));
   memset(params,0,(nbCPUThread + nbGPUThread) * sizeof(TH_PARAM));
 
+  // One lock for every result write. -t 0 starts no CPU thread, and a GPU
+  // hit still calls output(), so this cannot live inside the CPU loop.
+#ifdef WIN64
+  ghMutex = CreateMutex(NULL, FALSE, NULL);
+#else
+  pthread_mutex_init(&ghMutex, NULL);
+#endif
+
   // Launch CPU threads
   for (int i = 0; i < nbCPUThread; i++) {
     params[i].obj = this;
@@ -1663,11 +1671,9 @@ void VanitySearch::Search(int nbThread,std::vector<int> gpuId,std::vector<int> g
 #ifdef WIN64
     DWORD thread_id;
     CreateThread(NULL, 0, _FindKey, (void*)(params+i), 0, &thread_id);
-    ghMutex = CreateMutex(NULL, FALSE, NULL);
 #else
     pthread_t thread_id;
     pthread_create(&thread_id, NULL, &_FindKey, (void*)(params+i));
-    ghMutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
   }
 
