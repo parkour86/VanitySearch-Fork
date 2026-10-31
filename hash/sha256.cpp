@@ -57,8 +57,34 @@ inline uint32_t _rotr(uint32_t x, uint8_t r) {
     h = t1 + t2;
 
 #ifdef BSWAP
-#define WRITEBE32(ptr,x) *((uint32_t *)(ptr)) = _byteswap_ulong(x)
-#define WRITEBE64(ptr,x) *((uint64_t *)(ptr)) = _byteswap_uint64(x)
+// Byte-wise big-endian stores. A uint32_t/uint64_t store through a uint8_t*
+// is strict-aliasing UB, and the destination is often unaligned (address + 33
+// in GetPrivAddress). `x` is the integer value; the bytes on the wire are its
+// big-endian representation. Do not bswap first — the old
+// `*(uint32_t*)ptr = bswap(x)` already produced that layout on little-endian,
+// and swapping again reverses the digest and the padding length.
+#define WRITEBE32(ptr,x)                 \
+  do {                                   \
+    uint32_t v = (uint32_t)(x);          \
+    uint8_t *p = (uint8_t *)(ptr);       \
+    p[0] = (uint8_t)(v >> 24);           \
+    p[1] = (uint8_t)(v >> 16);           \
+    p[2] = (uint8_t)(v >> 8);            \
+    p[3] = (uint8_t)(v);                 \
+  } while (0)
+#define WRITEBE64(ptr,x)                 \
+  do {                                   \
+    uint64_t v = (uint64_t)(x);          \
+    uint8_t *p = (uint8_t *)(ptr);       \
+    p[0] = (uint8_t)(v >> 56);           \
+    p[1] = (uint8_t)(v >> 48);           \
+    p[2] = (uint8_t)(v >> 40);           \
+    p[3] = (uint8_t)(v >> 32);           \
+    p[4] = (uint8_t)(v >> 24);           \
+    p[5] = (uint8_t)(v >> 16);           \
+    p[6] = (uint8_t)(v >> 8);            \
+    p[7] = (uint8_t)(v);                 \
+  } while (0)
 #define READBE32(ptr) (uint32_t)_byteswap_ulong(*(uint32_t *)(ptr))
 #else
 #define WRITEBE32(ptr,x) *(ptr) = x
