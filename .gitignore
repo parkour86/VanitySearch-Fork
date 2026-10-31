@@ -14,3 +14,4 @@ CMakeLists.txt
 VanitySearch
 cmake-build-debug/
 *.prf
+bug-report
