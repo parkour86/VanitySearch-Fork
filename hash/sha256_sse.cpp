@@ -561,18 +561,34 @@ void sha256sse_checksum(uint32_t *i0, uint32_t *i1, uint32_t *i2, uint32_t *i3,
   _sha256sse::Initialize(s);
   _sha256sse::Transform2(s, i0, i1, i2, i3);
 
+  // Store byte-wise. A uint32_t store through these uint8_t* destinations is
+  // strict-aliasing UB, and address + 21 is unaligned. The lane word is the
+  // integer value; write it big-endian. bswap plus a big-endian store reverses
+  // the checksum (the old `*(uint32_t*)d = bswap(lane)` did not).
+  uint32_t w[4];
+
 #ifndef WIN64
   uint32_t *s32 = (uint32_t *)(&s[0]);
-  *((uint32_t *)d0) = __builtin_bswap32(s32[3]);
-  *((uint32_t *)d1) = __builtin_bswap32(s32[2]);
-  *((uint32_t *)d2) = __builtin_bswap32(s32[1]);
-  *((uint32_t *)d3) = __builtin_bswap32(s32[0]);
+  w[0] = s32[3];
+  w[1] = s32[2];
+  w[2] = s32[1];
+  w[3] = s32[0];
 #else
-  *((uint32_t *)d0) = _byteswap_ulong(s[0].m128i_u32[3]);
-  *((uint32_t *)d1) = _byteswap_ulong(s[0].m128i_u32[2]);
-  *((uint32_t *)d2) = _byteswap_ulong(s[0].m128i_u32[1]);
-  *((uint32_t *)d3) = _byteswap_ulong(s[0].m128i_u32[0]);
+  w[0] = s[0].m128i_u32[3];
+  w[1] = s[0].m128i_u32[2];
+  w[2] = s[0].m128i_u32[1];
+  w[3] = s[0].m128i_u32[0];
 #endif
+
+  uint8_t *dp[4] = {d0, d1, d2, d3};
+
+  for (int j = 0; j < 4; j++) {
+    uint8_t *p = dp[j];
+    p[0] = (uint8_t)(w[j] >> 24);
+    p[1] = (uint8_t)(w[j] >> 16);
+    p[2] = (uint8_t)(w[j] >> 8);
+    p[3] = (uint8_t)(w[j]);
+  }
 
 }
 
