@@ -246,6 +246,14 @@ void outputAdd(string outputFile, int addrType, string addr, string pAddr, strin
     outputAdd(outputFile, addrType, addr, pAddr, pAddrHex);    \
   }
 
+static int partialRecordStep(const vector<string> &lines, int i) {
+
+  if (i + 2 < (int)lines.size() && lines[i + 2].compare(0, 12, "PartialHex: ") == 0)
+    return 3;
+  return 2;
+
+}
+
 void reconstructAdd(Secp256K1 *secp, string fileName, string outputFile, string privAddr) {
 
   bool compressed;
@@ -262,7 +270,7 @@ void reconstructAdd(Secp256K1 *secp, string fileName, string outputFile, string 
   vector<string> lines;
   parseFile(fileName,lines);
 
-  for (int i = 0; i < (int)lines.size(); i+=2) {
+  for (int i = 0; i < (int)lines.size(); ) {
 
     string addr;
     string partialPrivAddr;
@@ -282,6 +290,7 @@ void reconstructAdd(Secp256K1 *secp, string fileName, string outputFile, string 
       default:
         printf("Invalid partialkey info file at line %d\n", i);
         printf("%s Address format not supported\n", addr.c_str());
+        i += partialRecordStep(lines, i);
         continue;
       }
 
@@ -307,6 +316,7 @@ void reconstructAdd(Secp256K1 *secp, string fileName, string outputFile, string 
     if (partialMode != compressed) {
 
       printf("Warning, Invalid partialkey at line %d (Wrong compression mode, ignoring key)\n", i);
+      i += partialRecordStep(lines, i);
       continue;
 
     } else {
@@ -358,6 +368,8 @@ void reconstructAdd(Secp256K1 *secp, string fileName, string outputFile, string 
       }
 
     }
+
+    i += partialRecordStep(lines, i);
 
   }
 

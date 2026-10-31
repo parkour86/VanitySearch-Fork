@@ -695,6 +695,10 @@ void VanitySearch::output(string addr,string pAddr,string pAddrHex) {
   if (startPubKeySpecified) {
 
     fprintf(f, "PartialPriv: %s\n", pAddr.c_str());
+    string hex = pAddrHex;
+    if (hex.length() < 64)
+      hex.insert(0, 64 - hex.length(), '0');
+    fprintf(f, "PartialHex: %s\n", hex.c_str());
 
   } else {
 
