@@ -14,9 +14,11 @@ Compute capabilities are found here: https://developer.nvidia.com/cuda-gpus
 
 | Compute Capability | NVIDIA Series     |
 |--------------------|-------------------|
-| 6.0, 6.1           | GTX 10-series     |
+| 6.0                | P100              |
+| 6.1                | GTX 10-series     |
 | 7.0                | RTX 20-series     |
-| 8.0, 8.6           | RTX 30-series     |
+| 8.0                | A100              |
+| 8.6                | RTX 30-series     |
 | 8.9                | RTX 40-series     |
 | 9.0                | H100, H200        |
 | 12.0               | RTX 50-series     |
